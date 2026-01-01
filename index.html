@@ -126,7 +126,7 @@
             background-color: var(--bg); 
             position: relative; 
             width: 100%;
-            isolation: isolate; /* Create new stacking context for pseudo-element */
+            isolation: isolate; 
         }
 
         /* Dynamic Background Image Support */
@@ -138,30 +138,17 @@
             background-position: center;
             background-attachment: fixed;
             z-index: -2;
-            opacity: 0.08; /* Subtle visibility */
+            opacity: 0.08; 
             transition: background-image 0.5s ease-in-out;
             pointer-events: none;
         }
 
-        /* Background Classes */
-        main.bg-dashboard::before {
-            background-image: url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop');
-        }
-        main.bg-goals::before {
-            background-image: url('https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop');
-        }
-        main.bg-tuition::before {
-            background-image: url('https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop');
-        }
-        main.bg-professional::before {
-             background-image: url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2070&auto=format&fit=crop');
-        }
+        main.bg-dashboard::before { background-image: url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop'); }
+        main.bg-goals::before { background-image: url('https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop'); }
+        main.bg-tuition::before { background-image: url('https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop'); }
+        main.bg-professional::before { background-image: url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2070&auto=format&fit=crop'); }
         
-        /* Dark mode adjustment for background visibility */
-        [data-theme='dark'] main::before {
-            opacity: 0.15;
-            filter: grayscale(0.5);
-        }
+        [data-theme='dark'] main::before { opacity: 0.15; filter: grayscale(0.5); }
 
         .page-header { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px; }
         .page-header h1 { font-size: 1.8rem; font-weight: 850; letter-spacing: -0.5px; }
@@ -175,7 +162,7 @@
             box-shadow: var(--shadow); 
             border: 1px solid var(--border);
             position: relative;
-            backdrop-filter: blur(5px); /* Enhances readability over background */
+            backdrop-filter: blur(5px);
         }
         .card-title { font-size: 1.1rem; font-weight: 750; margin-bottom: 1.25rem; color: var(--text); display: flex; justify-content: space-between; align-items: center; }
 
@@ -630,7 +617,10 @@
                                     return `<tr class="${rowClass}">
                                         <td><b>${c.party}</b><br><small>#${c.chequeNumber || 'N/A'} • ₹${c.amount}</small></td>
                                         <td style="color:${isOverdue?'var(--danger)':''}; font-weight:700;">${c.dueDate}<br><small>${c.daysLeft} days</small></td>
-                                        <td><select onchange="window.updateChequeField('${c.id}', 'status', this.value)" style="width: auto; padding: 4px; font-size:0.75rem;"><option value="Pending" ${c.status==='Pending'?'selected':''}>Hold</option><option value="Cleared" ${c.status==='Cleared'?'selected':''}>Clear</option></select></td>
+                                        <td><select onchange="window.updateChequeField('${c.id}', 'status', this.value)" style="width: auto; padding: 4px; font-size:0.75rem;">
+                                            <option value="Pending" ${c.status==='Pending'?'selected':''}>Hold</option>
+                                            <option value="Cleared" ${c.status==='Cleared'?'selected':''}>Clear</option>
+                                        </select></td>
                                         <td><div class="flex gap-2"><button class="btn-icon" onclick="window.showEditChequeModal('${c.id}')">✏️</button><button class="btn-icon delete" onclick="window.deleteDocById('cheques','${c.id}')">🗑️</button></div></td>
                                     </tr>`;
                                 }).join('')}</tbody>
@@ -669,7 +659,9 @@
                             <tbody>${data.students.map(s => {
                                 const att = data.attendance.find(a => a.studentId === s.id && a.date === tuitionDateFilter);
                                 return `<tr>
-                                    <td><b>${s.name}</b><br><small>${s.standard}</small></td>
+                                    <td>
+                                        <b>${s.name}</b><br><small>${s.standard}</small>
+                                    </td>
                                     <td>
                                         <div class="flex gap-1">
                                             <div class="att-toggle ${att?.status==='P'?'att-p':''}" onclick="window.markAttendance('${s.id}','P')">P</div>
@@ -717,9 +709,9 @@
                         
                         <div class="flex justify-between items-center mb-1 text-xs font-bold text-gray-500">
                             <span>${g.progress}% Complete</span>
+                            ${g.progress < 30 ? 'Start strong!' : (g.progress < 70 ? 'Keep going!' : 'Almost there!')}
                         </div>
                         <div class="goal-progress-circle"><div class="goal-progress-fill" style="width:${g.progress}%"></div></div>
-                        
                         <div class="mt-4">
                              <div class="flex justify-between items-center mb-2">
                                 <strong style="font-size:0.8rem">Milestones</strong>
@@ -806,19 +798,49 @@
 
         window.showAddStudentModal = () => window.showEditStudentModal();
         window.showEditStudentModal = (id = null) => {
-            const s = id ? data.students.find(x => x.id === id) : { name: '', standard: '' };
+            const s = id ? data.students.find(x => x.id === id) : { name: '', standard: '', firstName: '', middleName: '', surname: '', board: '' };
             window.showModal(`<h3>${id?'Edit':'Enroll'} Student</h3>
-                <div class="form-group mt-4"><label>Name</label><input type="text" id="st-name" value="${s.name}"></div>
-                <div class="form-group"><label>Std</label><input type="text" id="st-class" value="${s.standard}"></div>
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="form-group"><label>First Name</label><input id="st-fname" value="${s.firstName || ''}"></div>
+                  <div class="form-group"><label>Middle Name</label><input id="st-mname" value="${s.middleName || ''}"></div>
+                  <div class="form-group"><label>Surname</label><input id="st-lname" value="${s.surname || ''}"></div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="form-group"><label>Std</label><select id="st-std">
+                      <option value="">Select</option>
+                      ${['Nursery','LKG','UKG','1','2','3','4','5','6','7','8','9','10','11','12'].map(o => `<option value="${o}" ${s.standard===o?'selected':''}>${o}</option>`).join('')}
+                  </select></div>
+                  <div class="form-group"><label>Board</label><select id="st-board">
+                      <option value="GSEB" ${s.board==='GSEB'?'selected':''}>GSEB</option>
+                      <option value="CBSE" ${s.board==='CBSE'?'selected':''}>CBSE</option>
+                      <option value="ICSE" ${s.board==='ICSE'?'selected':''}>ICSE</option>
+                  </select></div>
+                  <div class="form-group"><label>Medium</label><select id="st-med">
+                      <option value="English" ${s.medium==='English'?'selected':''}>English</option>
+                      <option value="Gujarati" ${s.medium==='Gujarati'?'selected':''}>Gujarati</option>
+                      <option value="Hindi" ${s.medium==='Hindi'?'selected':''}>Hindi</option>
+                  </select></div>
+                </div>
                 <button class="btn btn-primary" onclick="window.saveStudent('${id}')">Save</button>`);
         };
 
         window.saveStudent = async (id) => { 
-            const name = document.getElementById('st-name').value;
-            const standard = document.getElementById('st-class').value;
-            const docData = { name, standard };
-            if (id && id !== 'undefined' && id !== 'null') await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'students', id), docData);
-            else await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'students'), { ...docData, medium: 'English Medium', progress: 0 }); 
+            const fname = document.getElementById('st-fname').value;
+            const mname = document.getElementById('st-mname').value;
+            const lname = document.getElementById('st-lname').value;
+            const standard = document.getElementById('st-std').value;
+            const board = document.getElementById('st-board').value;
+            const medium = document.getElementById('st-med').value;
+            
+            const fullName = `${fname} ${mname} ${lname}`.trim() || document.getElementById('st-name')?.value; // Fallback
+            
+            const docData = { name: fullName, firstName: fname, middleName: mname, surname: lname, standard, board, medium };
+            
+            if (id && id !== 'undefined' && id !== 'null') {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'students', id), docData);
+            } else {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'students'), { ...docData, progress: 0 }); 
+            }
             window.closeModal(); 
         };
 
