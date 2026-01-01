@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ProLife | Nurani Tuition Classes & Goal Management</title>
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-gradient: linear-gradient(135deg, #6366f1, #4338ca);
+            --secondary-gradient: linear-gradient(135deg, #ec4899, #be185d);
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --holiday: #f97316;
+            --radius: 20px;
+            --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme='dark'] {
+            --bg: #020617;
+            --card-bg: #0f172a;
+            --text: #f8fafc;
+            --text-light: #94a3b8;
+            --border: #1e293b;
+            --shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: var(--text); transition: background-color 0.3s; overflow-x: hidden; font-size: 14px; }
+        
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+
+        /* App Shell - Layout Page Fit */
+        #app-layout { display: flex; height: 100vh; overflow: hidden; position: relative; }
+        
+        /* Mobile Menu Overlay */
+        .sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90; display: none;
+            backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.active { display: block; }
+
+        /* Sidebar */
+        aside { 
+            width: 260px; 
+            background: var(--card-bg); 
+            border-right: 1px solid var(--border); 
+            padding: 1.5rem 1rem; 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+        
+        /* Mobile Toggle Button */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 80;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+        }
+
+        .logo { 
+            font-size: 1.5rem; 
+            font-weight: 900; 
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-left: 0.5rem;
+        }
+        nav { flex: 1; overflow-y: auto; }
+        nav ul { list-style: none; }
+        .nav-link { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 0.8rem 1rem; 
+            border-radius: 12px; 
+            text-decoration: none; 
+            color: var(--text-light); 
+            font-weight: 600; 
+            cursor: pointer; 
+            margin-bottom: 0.4rem;
+            transition: 0.2s all;
+        }
+        .nav-link:hover { background: rgba(79, 70, 229, 0.05); color: var(--primary); }
+        .nav-link.active { 
+            background: var(--primary-gradient); 
+            color: white; 
+            box-shadow: 0 8px 15px -3px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Main Content */
+        main { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 1.5rem; 
+            background-color: var(--bg); 
+            position: relative; 
+            width: 100%;
+            isolation: isolate; /* Create new stacking context for pseudo-element */
+        }
+
+        /* Dynamic Background Image Support */
+        main::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            z-index: -2;
+            opacity: 0.08; /* Subtle visibility */
+            transition: background-image 0.5s ease-in-out;
+            pointer-events: none;
+        }
+
+        /* Background Classes */
+        main.bg-dashboard::before {
+            background-image: url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop');
+        }
+        main.bg-goals::before {
+            background-image: url('https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop');
+        }
+        main.bg-tuition::before {
+            background-image: url('https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop');
+        }
+        main.bg-professional::before {
+             background-image: url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2070&auto=format&fit=crop');
+        }
+        
+        /* Dark mode adjustment for background visibility */
+        [data-theme='dark'] main::before {
+            opacity: 0.15;
+            filter: grayscale(0.5);
+        }
+
+        .page-header { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px; }
+        .page-header h1 { font-size: 1.8rem; font-weight: 850; letter-spacing: -0.5px; }
+
+        /* Grid & Cards */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; }
+        .card { 
+            background: var(--card-bg); 
+            border-radius: var(--radius); 
+            padding: 1.5rem; 
+            box-shadow: var(--shadow); 
+            border: 1px solid var(--border);
+            position: relative;
+            backdrop-filter: blur(5px); /* Enhances readability over background */
+        }
+        .card-title { font-size: 1.1rem; font-weight: 750; margin-bottom: 1.25rem; color: var(--text); display: flex; justify-content: space-between; align-items: center; }
+
+        /* Summary Pills */
+        .summary-pill { 
+            background: var(--bg); 
+            padding: 1.25rem; 
+            border-radius: 16px; 
+            text-align: center; 
+            border: 1px solid var(--border); 
+            transition: transform 0.2s;
+        }
+        .summary-pill:hover { transform: translateY(-2px); }
+        .summary-val { font-size: 2rem; font-weight: 900; color: var(--primary); line-height: 1; }
+        .summary-lbl { font-size: 0.75rem; color: var(--text-light); font-weight: 700; margin-top: 4px; text-transform: uppercase; }
+
+        /* Buttons */
+        .btn { 
+            padding: 0.6rem 1.2rem; 
+            border-radius: 10px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s all;
+            font-size: 0.85rem;
+            text-align: center;
+            justify-content: center;
+        }
+        .btn-primary { background: var(--primary-gradient); color: white; }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.75rem; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-icon { background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 6px; transition: 0.2s; color: var(--text-light); }
+        .btn-icon:hover { background: var(--bg); color: var(--primary); }
+        .btn-icon.delete:hover { background: #fee2e2; color: var(--danger); }
+
+        /* Tables */
+        .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); width: 100%; }
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); white-space: nowrap; }
+        th { text-align: left; padding: 0.75rem 1rem; background: var(--bg); font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+
+        /* Badges */
+        .badge { padding: 0.3rem 0.7rem; border-radius: 8px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; display: inline-block; }
+        .badge-cleared { background: #dcfce7; color: #15803d; }
+        .badge-pending { background: #fee2e2; color: #b91c1c; }
+        .priority-high { border-left: 4px solid var(--danger) !important; background: rgba(254, 226, 226, 0.2); }
+        .priority-safe { border-left: 4px solid var(--success) !important; }
+        .cheque-overdue { border-left: 4px solid var(--danger); background: rgba(254, 226, 226, 0.4); }
+        .cheque-today { border-left: 4px solid var(--warning); background: rgba(254, 243, 199, 0.4); }
+
+        /* Goal Hub */
+        .goal-card-premium {
+            background: var(--card-bg); border-radius: 24px; padding: 1.5rem; position: relative; overflow: hidden;
+            border: 1px solid var(--border); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05); transition: all 0.3s ease;
+        }
+        .goal-card-premium:hover { transform: translateY(-3px); }
+        .goal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+        .goal-icon-box { 
+            width: 45px; height: 45px; border-radius: 12px; font-size: 1.5rem;
+            background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(236,72,153,0.1));
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .goal-progress-circle { width: 100%; height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin: 15px 0; }
+        .goal-progress-fill { height: 100%; background: var(--primary-gradient); border-radius: 10px; transition: width 0.5s ease; }
+
+        /* Tuition */
+        .att-toggle { cursor: pointer; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; border: 1.5px solid var(--border); transition: 0.2s; flex-shrink: 0; }
+        .att-p { background: var(--success); color: white; border-color: var(--success); }
+        .att-a { background: var(--danger); color: white; border-color: var(--danger); }
+        .att-h { background: var(--holiday); color: white; border-color: var(--holiday); }
+
+        /* Inputs */
+        input, select, textarea { width: 100%; padding: 0.65rem; border-radius: 8px; border: 1.5px solid var(--border); background: var(--card-bg); color: var(--text); outline: none; }
+        input:focus { border-color: var(--primary); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-weight: 700; font-size: 0.85rem; }
+
+        /* Modals */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 650px; border-radius: 24px; padding: 2rem; max-height: 85vh; overflow-y: auto; position: relative; }
+
+        /* Analysis */
+        #analysis-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1500; overflow-y: auto; padding: 2rem; }
+        .chart-box { background: var(--card-bg); padding: 1.5rem; border-radius: 20px; box-shadow: var(--shadow); height: 350px; border: 1px solid var(--border); margin-bottom: 1rem; }
+        .analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-top: 2rem; }
+        
+        .chapter-item { display: flex; flex-direction: column; padding: 0.8rem; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.5rem; background: var(--bg); }
+        .chapter-row { display: flex; align-items: center; justify-content: space-between; }
+        .chapter-note input { font-size: 0.8rem; padding: 6px; background: white; border: 1px solid var(--border); width: 100%; border-radius: 6px; margin-top: 5px; }
+
+        @media (max-width: 768px) {
+            #app-layout { flex-direction: column; }
+            
+            /* Sidebar Toggle */
+            aside { 
+                position: fixed; top: 0; left: 0; bottom: 0; 
+                width: 280px; transform: translateX(-100%); 
+                box-shadow: 5px 0 15px rgba(0,0,0,0.1); 
+            }
+            aside.open { transform: translateX(0); }
+            
+            .menu-toggle { display: block; }
+            
+            main { padding: 4.5rem 1rem 1rem 1rem; width: 100%; }
+            
+            /* Typography */
+            .page-header h1 { font-size: 1.6rem; }
+            .card-title { font-size: 1.1rem; flex-wrap: wrap; gap: 0.5rem; }
+            
+            /* Grid */
+            .grid { grid-template-columns: 1fr; gap: 1rem; }
+            .analysis-grid { grid-template-columns: 1fr; gap: 1rem; }
+            
+            /* Flex adjustments */
+            .flex-mobile-col { flex-direction: column; gap: 1rem; }
+            
+            /* Tables */
+            .table-container { margin-bottom: 1rem; }
+            
+            /* Modal Adjustments */
+            .modal-content { padding: 1.5rem; width: 95%; max-height: 90vh; }
+            .modal-grid-stack { grid-template-columns: 1fr !important; }
+            
+            /* Buttons */
+            .btn { padding: 0.7rem 1rem; width: 100%; justify-content: center; }
+            
+            /* Charts */
+            .chart-box { height: 300px; padding: 1rem; }
+        }
+
+        /* --- LOGIN BACKGROUND --- */
+        #auth-container { 
+            min-height:100vh; display:flex; align-items:center; justify-content:center; 
+            background: url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070&auto=format&fit=crop') no-repeat center center fixed; 
+            background-size: cover;
+            position: relative;
+        }
+        #auth-container::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.9), rgba(67, 56, 202, 0.8));
+            z-index: 1;
+        }
+        #auth-container .card { position: relative; z-index: 2; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+
+    </style>
+</head>
+<body data-theme="light">
+
+    <!-- Auth View -->
+    <div id="auth-view">
+        <div id="auth-container">
+            <div class="card" style="width: 100%; max-width: 380px; padding: 2.5rem; margin: 1rem;">
+                <div id="login-form">
+                    <h2 style="text-align:center; margin-bottom:2rem; font-weight:900; font-size:1.8rem;">ProLife Login</h2>
+                    <div class="form-group"><label>Email</label><input type="email" id="login-email"></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="login-password"></div>
+                    <button class="btn btn-primary" onclick="window.handleLogin()">Login</button>
+                    <p style="text-align:center; margin-top:1.5rem; cursor:pointer; color:var(--primary);" onclick="window.toggleAuth(true)">Create Account</p>
+                </div>
+                <div id="signup-form" class="hidden">
+                    <h2 style="text-align:center; margin-bottom:1.5rem;">Sign Up</h2>
+                    <div class="form-group"><label>Name</label><input type="text" id="signup-name"></div>
+                    <div class="form-group"><label>Email</label><input type="email" id="signup-email"></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="signup-password"></div>
+                    <button class="btn btn-primary" onclick="window.handleSignup()">Sign Up</button>
+                    <p style="text-align:center; margin-top:1.5rem; cursor:pointer;" onclick="window.toggleAuth(false)">Login</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App View -->
+    <div id="app-view" class="hidden">
+        <div class="sidebar-overlay" onclick="window.toggleSidebar()"></div>
+        <button class="menu-toggle" onclick="window.toggleSidebar()">☰ Menu</button>
+        
+        <div id="app-layout">
+            <aside id="sidebar">
+                <div class="logo">📊 ProLife</div>
+                <nav id="sidebar-nav">
+                    <ul>
+                        <li><div id="nav-dashboard" class="nav-link active" onclick="window.showPage('dashboard')">🏠 <span>Dashboard</span></div></li>
+                        <li><div id="nav-professional" class="nav-link" onclick="window.showPage('professional')">👔 <span>Professional</span></div></li>
+                        <li><div id="nav-tuition" class="nav-link" onclick="window.showPage('tuition')">📚 <span>Tuition</span></div></li>
+                        <li><div id="nav-goals" class="nav-link" onclick="window.showPage('goals')">🎯 <span>Goal Hub</span></div></li>
+                    </ul>
+                </nav>
+                <div style="margin-top:auto; padding-top:1rem; border-top:1px solid var(--border)">
+                    <p id="user-display-name" style="font-weight:800; font-size:0.8rem; color:var(--primary); margin-bottom:0.5rem; text-align:center;"></p>
+                    <button class="btn btn-outline btn-sm" onclick="window.handleLogout()">🚪 Logout</button>
+                    <button class="btn btn-outline btn-sm" onclick="window.toggleDarkMode()" style="margin-top:5px;">🌓 Theme</button>
+                </div>
+            </aside>
+            <main id="main-content"></main>
+        </div>
+    </div>
+
+    <!-- Analysis Overlay -->
+    <div id="analysis-overlay" class="hidden">
+        <div class="analysis-container">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 id="analysis-title" style="font-weight:900; font-size:1.8rem;">3D Analytics</h1>
+                </div>
+                <button class="btn btn-outline" style="width: auto; background:var(--card-bg)" onclick="window.closeAnalysisView()">✕</button>
+            </div>
+            <div id="analysis-content"></div>
+        </div>
+    </div>
+
+    <div id="modal-container" class="hidden"></div>
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, Timestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDITHD1oFf7OnxBSW9PUJv6lhnITrsOOmI",
+            authDomain: "nuranitutionclasses.firebaseapp.com",
+            projectId: "nuranitutionclasses",
+            storageBucket: "nuranitutionclasses.firebasestorage.app",
+            messagingSenderId: "318451325558",
+            appId: "1:318451325558:web:d751d59c985cf11d9d9d57"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "prolife-v3-final";
+
+        let currentUser = null;
+        let activePage = 'dashboard';
+        let tuitionDateFilter = new Date().toISOString().split('T')[0];
+        let data = { reminders: [], cheques: [], tasks: [], students: [], attendance: [], syllabus: [], tests: [], goals: [] };
+        let charts = {};
+
+        // --- Core Functions ---
+        window.showToast = (m) => { 
+            const t = document.createElement('div'); t.className = 'toast'; t.innerText = m; 
+            document.getElementById('toast-container').appendChild(t); 
+            setTimeout(() => t.remove(), 3000); 
+        };
+        window.showModal = (c) => { 
+            const m = document.getElementById('modal-container'); 
+            m.innerHTML = `<div class="modal"><div class="modal-content"><button onclick="window.closeModal()" style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:2rem; cursor:pointer;">✕</button>${c}</div></div>`; 
+            m.classList.remove('hidden'); 
+        };
+        window.closeModal = () => document.getElementById('modal-container').classList.add('hidden');
+        window.toggleDarkMode = () => { document.body.dataset.theme = document.body.dataset.theme === 'light' ? 'dark' : 'light'; };
+        
+        // Mobile Sidebar Toggle
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        };
+
+        window.showPage = (p) => {
+            activePage = p;
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            const link = document.getElementById('nav-' + p);
+            if(link) link.classList.add('active');
+            
+            // Background Logic
+            const main = document.querySelector('main');
+            main.className = `bg-${p}`;
+            
+            // Close mobile sidebar on navigation
+            if(window.innerWidth <= 768) window.toggleSidebar();
+            
+            window.renderActivePage();
+        };
+
+        // --- Renderers ---
+        window.renderActivePage = () => {
+            const el = document.getElementById('main-content');
+            if(!el) return;
+            if (activePage === 'dashboard') renderDashboard(el);
+            else if (activePage === 'professional') renderProfessional(el);
+            else if (activePage === 'tuition') renderTuition(el);
+            else if (activePage === 'goals') renderGoals(el);
+            
+            if(!document.getElementById('analysis-overlay').classList.contains('hidden')) {
+                const currentType = document.getElementById('analysis-title').innerText.split(' ')[0].toLowerCase();
+                if(currentType && currentType !== '3d') window.openAnalysisView(currentType);
+            }
+        };
+
+        function calculatePendingDays(dueDay) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const targetDay = Math.min(dueDay, lastDay);
+            const targetDate = new Date(year, month, targetDay);
+            if (now.getDate() > targetDay) {
+                const nextMonthDate = new Date(year, month + 1, targetDay);
+                return Math.ceil((nextMonthDate - now) / (1000 * 60 * 60 * 24));
+            }
+            return Math.ceil((targetDate - now) / (1000 * 60 * 60 * 24));
+        }
+
+        function calculateDaysFromDate(dateStr) {
+            if (!dateStr) return 0;
+            const target = new Date(dateStr);
+            const now = new Date();
+            return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+        }
+
+        function calculateOverallGoalRate() {
+            if (!data.goals || data.goals.length === 0) return 0;
+            return Math.round(data.goals.reduce((acc, g) => acc + (g.progress || 0), 0) / data.goals.length);
+        }
+
+        function renderDashboard(el) {
+            const today = new Date();
+            const monthStr = today.toISOString().substring(0, 7);
+            const reminders = data.reminders.filter(r => r.type === 'monthly');
+            const doneRem = reminders.filter(r => r.completedMonths?.includes(monthStr)).length;
+            const goalRate = calculateOverallGoalRate();
+            
+            const pendingReminders = reminders.filter(r => !r.completedMonths?.includes(monthStr))
+                .map(r => ({ ...r, daysLeft: calculatePendingDays(parseInt(r.date)) }))
+                .sort((a, b) => a.daysLeft - b.daysLeft);
+
+            const pendingCheques = data.cheques.filter(c => c.status === 'Pending')
+                .map(c => ({ ...c, daysLeft: calculateDaysFromDate(c.dueDate) }))
+                .sort((a, b) => a.daysLeft - b.daysLeft);
+
+            el.innerHTML = `
+                <div class="page-header">
+                    <h1>Daily Insight</h1>
+                    <p style="color:var(--text-light)">${today.toLocaleDateString('en-IN', {weekday: 'long', day: 'numeric', month: 'long'})}</p>
+                </div>
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-title">🚨 Urgent Attention</div>
+                        <div style="max-height:220px; overflow-y:auto">
+                            ${pendingReminders.slice(0, 3).map(r => `
+                                <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 ${r.daysLeft <= 3 ? 'priority-high' : ''}" style="padding-left:10px;">
+                                    <div>
+                                        <div style="font-weight:700; font-size:0.9rem;">${r.title}</div>
+                                        <div style="font-size:0.75rem; color:var(--text-light)">Due in ${r.daysLeft} days</div>
+                                    </div>
+                                    <button class="btn-sm btn-outline" onclick="window.showPage('professional')">Check</button>
+                                </div>
+                            `).join('')}
+                            ${pendingCheques.slice(0, 2).map(c => `
+                                <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 ${c.daysLeft <= 1 ? 'cheque-overdue' : ''}" style="padding-left:10px;">
+                                    <div>
+                                        <div style="font-weight:700; font-size:0.9rem;">Cheque #${c.chequeNumber || 'N/A'}</div>
+                                        <div style="font-size:0.75rem; color:${c.daysLeft<0?'var(--danger)':'var(--text-light)'}">Due: ${c.dueDate}</div>
+                                    </div>
+                                    <span class="badge badge-pending">Pending</span>
+                                </div>
+                            `).join('')}
+                            ${pendingReminders.length === 0 && pendingCheques.length === 0 ? '<p class="text-center text-sm">All clear! Relax.</p>' : ''}
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">📊 Quick Stats</div>
+                        <div class="flex gap-4 mb-4">
+                            <div class="summary-pill flex-1">
+                                <div class="summary-val">${data.students.length}</div>
+                                <div class="summary-lbl">Students</div>
+                            </div>
+                            <div class="summary-pill flex-1">
+                                <div class="summary-val">${doneRem}/${reminders.length}</div>
+                                <div class="summary-lbl">Month Cycle</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" style="width:100%" onclick="window.showPage('tuition')">Attendance</button>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">🎯 Goal Focus</div>
+                        <div class="summary-pill mb-4" style="padding:1rem;">
+                            <div class="summary-val">${goalRate}%</div>
+                            <div class="summary-lbl">Total Mastery</div>
+                        </div>
+                        <div class="progress-container"><div class="progress-bar" style="width:${goalRate}%"></div></div>
+                        <button class="btn btn-outline btn-sm mt-4" style="width:100%" onclick="window.showPage('goals')">View Hub</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderProfessional(el) {
+            const currentMonth = new Date().toISOString().substring(0, 7);
+            const todayStr = new Date().toISOString().split('T')[0];
+            
+            const sortedReminders = data.reminders.filter(r => r.type === 'monthly')
+                .map(r => ({ ...r, daysLeft: calculatePendingDays(parseInt(r.date)) }))
+                .sort((a, b) => a.daysLeft - b.daysLeft);
+
+            const sortedCheques = data.cheques.filter(c => c.status === 'Pending')
+                .map(c => ({ ...c, daysLeft: calculateDaysFromDate(c.dueDate) }))
+                .sort((a, b) => a.daysLeft - b.daysLeft)
+                .concat(data.cheques.filter(c => c.status !== 'Pending'));
+
+            const sortedTasks = data.tasks.sort((a, b) => (a.done === b.done) ? 0 : a.done ? 1 : -1);
+
+            el.innerHTML = `
+                <div class="page-header flex justify-between items-end">
+                    <div><h1>Professional Hub</h1></div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-outline btn-sm" onclick="window.openAnalysisView('professional')">Analysis</button>
+                        <button class="btn btn-primary btn-sm" onclick="window.showAddReminderModal()">+ Reminder</button>
+                        <button class="btn btn-primary btn-sm" onclick="window.showAddChequeModal()">+ Cheque</button>
+                    </div>
+                </div>
+                <div class="grid">
+                    <div class="card" style="grid-column: span 2">
+                        <div class="card-title">📅 Monthly Reminders (Priority Sorted)</div>
+                        <div class="table-container">
+                            <table>
+                                <thead><tr><th>Name</th><th>Status</th><th>Time Left</th><th>Action</th><th>Edit</th></tr></thead>
+                                <tbody>${sortedReminders.map((r, index) => {
+                                    const isDone = r.completedMonths?.includes(currentMonth);
+                                    const isUrgent = !isDone && r.daysLeft <= 3;
+                                    const rowClass = isUrgent ? 'priority-high' : (!isDone ? 'priority-safe' : '');
+                                    
+                                    return `<tr class="${rowClass}">
+                                        <td>
+                                            <b>${r.title}</b>
+                                            ${index === 0 && !isDone ? '<span style="font-size:0.6rem; background:var(--danger); color:white; padding:2px 4px; border-radius:4px; margin-left:5px;">HIGH PRIORITY</span>' : ''}
+                                        </td>
+                                        <td><span class="badge ${isDone?'badge-cleared':'badge-pending'}">${isDone?'Cleared':'Pending'}</span></td>
+                                        <td style="font-weight:700; color:${isUrgent ? 'var(--danger)' : 'var(--text)'}">${r.daysLeft} Days</td>
+                                        <td><button class="btn-sm btn-outline" onclick="window.toggleReminderMonth('${r.id}','${currentMonth}',${isDone})">${isDone?'Undo':'Done'}</button></td>
+                                        <td><div class="flex gap-2"><button class="btn-icon" onclick="window.showEditReminderModal('${r.id}')">✏️</button><button class="btn-icon delete" onclick="window.deleteDocById('reminders','${r.id}')">🗑️</button></div></td>
+                                    </tr>`;
+                                }).join('')}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">🏦 Bank Cheques</div>
+                        <div class="table-container" style="max-height: 400px; overflow-y:auto">
+                            <table>
+                                <thead><tr><th>Details</th><th>Due</th><th>Action</th><th>Edit</th></tr></thead>
+                                <tbody>${sortedCheques.map(c => {
+                                    const isOverdue = c.daysLeft < 0 && c.status === 'Pending';
+                                    const isToday = c.dueDate === todayStr && c.status === 'Pending';
+                                    const rowClass = isOverdue ? 'cheque-overdue' : (isToday ? 'cheque-today' : '');
+                                    return `<tr class="${rowClass}">
+                                        <td><b>${c.party}</b><br><small>#${c.chequeNumber || 'N/A'} • ₹${c.amount}</small></td>
+                                        <td style="color:${isOverdue?'var(--danger)':''}; font-weight:700;">${c.dueDate}<br><small>${c.daysLeft} days</small></td>
+                                        <td><select onchange="window.updateChequeField('${c.id}', 'status', this.value)" style="width: auto; padding: 4px; font-size:0.75rem;"><option value="Pending" ${c.status==='Pending'?'selected':''}>Hold</option><option value="Cleared" ${c.status==='Cleared'?'selected':''}>Clear</option></select></td>
+                                        <td><div class="flex gap-2"><button class="btn-icon" onclick="window.showEditChequeModal('${c.id}')">✏️</button><button class="btn-icon delete" onclick="window.deleteDocById('cheques','${c.id}')">🗑️</button></div></td>
+                                    </tr>`;
+                                }).join('')}</tbody>
+                            </table>
+                        </div>
+                        <div class="card-title mt-4">📝 Tasks</div>
+                        <div class="max-h-[200px] overflow-y-auto">
+                            ${sortedTasks.map(t => `
+                                <div class="flex justify-between items-center py-2 border-b">
+                                    <div class="flex gap-2 items-center">
+                                        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="window.toggleProfTask('${t.id}', this.checked)">
+                                        <span style="${t.done ? 'text-decoration:line-through;opacity:0.5':''}">${t.title}</span>
+                                    </div>
+                                    <div class="flex gap-1"><button class="btn-icon" onclick="window.showEditTaskModal('${t.id}')">✏️</button><button class="btn-icon delete" onclick="window.deleteDocById('tasks','${t.id}')">🗑️</button></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTuition(el) {
+            el.innerHTML = `
+                <div class="page-header flex justify-between items-end">
+                    <div><h1>Tuition Tracker</h1><input type="date" value="${tuitionDateFilter}" onchange="window.setTuitionDate(this.value)" style="width:auto; padding:4px; font-size:0.8rem; margin-top:5px;"></div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-outline btn-sm" onclick="window.openAnalysisView('tuition')">Analysis</button>
+                        <button class="btn btn-primary btn-sm" onclick="window.showAddStudentModal()">+ Enroll</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Name</th><th>Attendance</th><th>Syllabus</th><th>Tools</th></tr></thead>
+                            <tbody>${data.students.map(s => {
+                                const att = data.attendance.find(a => a.studentId === s.id && a.date === tuitionDateFilter);
+                                return `<tr>
+                                    <td><b>${s.name}</b><br><small>${s.standard}</small></td>
+                                    <td>
+                                        <div class="flex gap-1">
+                                            <div class="att-toggle ${att?.status==='P'?'att-p':''}" onclick="window.markAttendance('${s.id}','P')">P</div>
+                                            <div class="att-toggle ${att?.status==='A'?'att-a':''}" onclick="window.markAttendance('${s.id}','A')">A</div>
+                                            <div class="att-toggle ${att?.status==='H'?'att-h':''}" onclick="window.markAttendance('${s.id}','H')">H</div>
+                                        </div>
+                                    </td>
+                                    <td><button class="btn-sm btn-outline" onclick="window.showSyllabusManager('${s.id}')">Manage</button></td>
+                                    <td>
+                                        <div class="flex gap-2">
+                                            <button class="btn-icon" onclick="window.generateProfessionalReport('${s.id}')">📄</button>
+                                            <button class="btn-icon" onclick="window.showEditStudentModal('${s.id}')">✏️</button>
+                                            <button class="btn-icon delete" onclick="window.deleteDocById('students', '${s.id}')">🗑️</button>
+                                        </div>
+                                    </td>
+                                </tr>`;
+                            }).join('')}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderGoals(el) {
+            el.innerHTML = `
+                <div class="page-header flex justify-between items-end">
+                    <h1>Premium Goal Hub</h1>
+                    <div class="flex gap-2">
+                        <button class="btn btn-outline btn-sm" onclick="window.openAnalysisView('goals')">Analytics</button>
+                        <button class="btn btn-primary btn-sm" onclick="window.showGoalCreateModal()">+ Create</button>
+                    </div>
+                </div>
+                <div class="grid">${data.goals.map(g => `
+                    <div class="goal-card-premium" style="border-top: 5px solid ${g.priority === 'High' ? 'var(--danger)' : 'var(--primary)'}">
+                        <div class="goal-header">
+                            <div class="flex items-center gap-3">
+                                <div class="goal-icon-box">${g.emoji || '🎯'}</div>
+                                <div><h3 style="font-weight:800; font-size:1.1rem;">${g.title}</h3><span style="font-size:0.75rem; color:var(--text-light); text-transform:uppercase;">${g.category}</span></div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button class="btn-icon" onclick="window.showGoalCreateModal('${g.id}')">✏️</button>
+                                <button class="btn-icon delete" onclick="window.deleteDocById('goals','${g.id}')">🗑️</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mb-1 text-xs font-bold text-gray-500">
+                            <span>${g.progress}% Complete</span>
+                        </div>
+                        <div class="goal-progress-circle"><div class="goal-progress-fill" style="width:${g.progress}%"></div></div>
+                        
+                        <div class="mt-4">
+                             <div class="flex justify-between items-center mb-2">
+                                <strong style="font-size:0.8rem">Milestones</strong>
+                                <button class="btn-sm btn-outline" style="padding:2px 6px; font-size:0.7rem;" onclick="window.showAddSubTask('${g.id}')">Add +</button>
+                            </div>
+                            <div class="max-h-[150px] overflow-y-auto">
+                                ${(g.tasks || []).map((t, i) => `
+                                    <div class="milestone-item" style="border-color:${t.done ? 'var(--success)' : 'var(--border)'}; display:flex; justify-content:space-between; align-items:center;">
+                                        <div style="display:flex; gap:5px; align-items:center;">
+                                            <input type="checkbox" onchange="window.toggleGoalTask('${g.id}',${i},this.checked)" ${t.done?'checked':''}>
+                                            <span style="font-size:0.85rem; ${t.done?'text-decoration:line-through; opacity:0.6':''}">${t.title}</span>
+                                        </div>
+                                        <div class="flex gap-1">
+                                            <button class="btn-icon" style="font-size:0.7rem" onclick="window.editGoalTask('${g.id}', ${i})">✏️</button>
+                                            <button class="btn-icon delete" style="font-size:0.7rem" onclick="window.removeGoalTask('${g.id}', ${i})">×</button>
+                                        </div>
+                                    </div>
+                                `).join('') || '<p style="font-size:0.7rem; color:var(--text-light)">No milestones.</p>'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}</div>
+            `;
+        }
+
+        // --- Logic Exports ---
+        window.showAddChequeModal = () => window.showEditChequeModal();
+        window.showEditChequeModal = (id = null) => {
+            const c = id ? data.cheques.find(x => x.id === id) : { party: '', amount: '', dueDate: new Date().toISOString().split('T')[0], chequeNumber: '' };
+            window.showModal(`<h3>${id?'Edit':'Record'} Cheque</h3>
+                <div class="form-group mt-4"><label>Party Name</label><input type="text" id="chq-party" value="${c.party}"></div>
+                <div class="form-group"><label>Cheque Number</label><input type="text" id="chq-num" value="${c.chequeNumber || ''}" placeholder="Mandatory"></div>
+                <div class="form-group"><label>Amount</label><input type="number" id="chq-amt" value="${c.amount}"></div>
+                <div class="form-group"><label>Due Date</label><input type="date" id="chq-due" value="${c.dueDate}"></div>
+                <button class="btn btn-primary" onclick="window.saveCheque('${id}')">Save Cheque</button>`);
+        };
+
+        window.saveCheque = async (id) => { 
+            const party = document.getElementById('chq-party').value;
+            const amt = document.getElementById('chq-amt').value;
+            const due = document.getElementById('chq-due').value;
+            const num = document.getElementById('chq-num').value;
+            if(!party || !amt || !num) return alert('Cheque Number, Party and Amount are required');
+            const docData = { party, amount: Number(amt), dueDate: due, chequeNumber: num };
+            if (id && id !== 'undefined' && id !== 'null') {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'cheques', id), docData);
+            } else {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'cheques'), { ...docData, status: 'Pending', receivedDate: new Date().toISOString().split('T')[0] });
+            }
+            window.closeModal(); 
+        };
+
+        window.showAddReminderModal = () => window.showEditReminderModal();
+        window.showEditReminderModal = (id = null) => {
+            const r = id ? data.reminders.find(x => x.id === id) : { title: '', date: '' };
+            window.showModal(`<h3>${id?'Edit':'New'} Reminder</h3>
+                <div class="form-group mt-4"><label>Task Name</label><input type="text" id="rem-title" value="${r.title}"></div>
+                <div class="form-group"><label>Month Day (1-28)</label><input type="number" id="rem-day" min="1" max="28" value="${r.date}"></div>
+                <button class="btn btn-primary" onclick="window.saveReminder('${id}')">Save Cycle</button>`);
+        };
+
+        window.saveReminder = async (id) => { 
+            const title = document.getElementById('rem-title').value;
+            const day = document.getElementById('rem-day').value;
+            const docData = { title, date: day, type: 'monthly' };
+            if (id && id !== 'undefined' && id !== 'null') await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'reminders', id), docData);
+            else await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'reminders'), { ...docData, completedMonths: [] });
+            window.closeModal(); 
+        };
+
+        window.saveOfficeTask = async (id = null) => {
+             if (!id) {
+                 const title = document.getElementById('ot-name') ? document.getElementById('ot-name').value : prompt("Task Name:");
+                 if(!title) return;
+                 await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), { title, done: false, completionMonth: null, createdAt: Timestamp.now() });
+                 if(document.getElementById('ot-name')) document.getElementById('ot-name').value = '';
+             } else {
+                 const t = data.tasks.find(x => x.id === id);
+                 const newTitle = prompt("Edit Task Name:", t.title);
+                 if (newTitle) await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), { title: newTitle });
+             }
+        };
+        window.showEditTaskModal = (id) => window.saveOfficeTask(id);
+
+        window.showAddStudentModal = () => window.showEditStudentModal();
+        window.showEditStudentModal = (id = null) => {
+            const s = id ? data.students.find(x => x.id === id) : { name: '', standard: '' };
+            window.showModal(`<h3>${id?'Edit':'Enroll'} Student</h3>
+                <div class="form-group mt-4"><label>Name</label><input type="text" id="st-name" value="${s.name}"></div>
+                <div class="form-group"><label>Std</label><input type="text" id="st-class" value="${s.standard}"></div>
+                <button class="btn btn-primary" onclick="window.saveStudent('${id}')">Save</button>`);
+        };
+
+        window.saveStudent = async (id) => { 
+            const name = document.getElementById('st-name').value;
+            const standard = document.getElementById('st-class').value;
+            const docData = { name, standard };
+            if (id && id !== 'undefined' && id !== 'null') await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'students', id), docData);
+            else await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'students'), { ...docData, medium: 'English Medium', progress: 0 }); 
+            window.closeModal(); 
+        };
+
+        window.showGoalCreateModal = () => window.showEditGoalModal();
+        window.showEditGoalModal = (id = null) => {
+            const g = id ? data.goals.find(x => x.id === id) : { title: '', category: 'Personal', priority: 'Medium' };
+            window.showModal(`<h3>${id?'Edit':'Set'} Goal</h3>
+                <div class="form-group mt-4"><label>Title</label><input type="text" id="g-title" value="${g.title}"></div>
+                <div class="form-group"><label>Priority</label><select id="g-pri">
+                    <option value="High" ${g.priority==='High'?'selected':''}>High</option>
+                    <option value="Medium" ${g.priority==='Medium'?'selected':''}>Medium</option>
+                    <option value="Low" ${g.priority==='Low'?'selected':''}>Low</option>
+                </select></div>
+                <button class="btn btn-primary" onclick="window.saveGoalHub('${id}')">Save</button>`);
+        };
+
+        window.saveGoalHub = async (id) => { 
+            const title = document.getElementById('g-title').value;
+            const pri = document.getElementById('g-pri').value;
+            const docData = { title, priority: pri };
+            if (id && id !== 'undefined' && id !== 'null') await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'goals', id), docData);
+            else await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'goals'), { ...docData, progress: 0, tasks: [] }); 
+            window.closeModal(); 
+        };
+
+        window.editGoalTask = (goalId, index) => {
+            const g = data.goals.find(x => x.id === goalId);
+            const task = g.tasks[index];
+            const newTitle = prompt("Edit Task:", task.title);
+            if (newTitle) {
+                const ts = [...g.tasks]; ts[index].title = newTitle;
+                updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'goals', goalId), { tasks: ts });
+            }
+        };
+
+        window.removeGoalTask = (goalId, index) => {
+            if (!confirm("Delete this subtask?")) return;
+            const g = data.goals.find(x => x.id === goalId);
+            const ts = g.tasks.filter((_, i) => i !== index);
+            updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'goals', goalId), { tasks: ts, progress: Math.round((ts.filter(x=>x.done).length / (ts.length || 1)) * 100) });
+        };
+
+        window.markAttendance = async (stId, status) => {
+            const date = tuitionDateFilter;
+            let reason = '';
+            if (status === 'A') {
+                const existing = data.attendance.find(a => a.studentId === stId && a.date === date);
+                reason = prompt("Reason for absence:", existing ? existing.reason : "");
+                if (reason === null) return;
+            }
+            const ex = data.attendance.find(a => a.studentId === stId && a.date === date);
+            if(ex) await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'attendance', ex.id), { status, reason });
+            else await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'attendance'), { studentId: stId, date: tuitionDateFilter, status, reason });
+        };
+
+        window.toggleReminderMonth = async (id, m, done) => {
+            const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'reminders', id);
+            if(done) await updateDoc(ref, { completedMonths: arrayRemove(m) });
+            else await updateDoc(ref, { completedMonths: arrayUnion(m) });
+        };
+
+        window.updateChequeField = async (id, f, v) => await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'cheques', id), { [f]: v });
+        
+        window.deleteDocById = async (col, id) => { 
+            if(confirm("Are you sure you want to delete this item? This cannot be undone.")) 
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, col, id)); 
+        };
+
+        window.toggleProfTask = async (id, done) => {
+            const month = new Date().toISOString().substring(0, 7);
+            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', id), { done, completionMonth: done ? month : null });
+        };
+
+        // --- Analysis Handlers ---
+        window.openAnalysisView = (type) => {
+            const overlay = document.getElementById('analysis-overlay');
+            const content = document.getElementById('analysis-content');
+            overlay.classList.remove('hidden');
+            if (type === 'tuition') {
+                const att = calculateOverallAttendanceData();
+                content.innerHTML = `<div class="analysis-grid"><div class="chart-box"><canvas id="attChart"></canvas></div><div class="chart-box"><canvas id="syllChart"></canvas></div></div>`;
+                new Chart(document.getElementById('attChart'), { type: 'doughnut', data: { labels: ['Present', 'Absent', 'Holiday'], datasets: [{ data: [att.present, att.absent, att.holiday], backgroundColor: ['#10b981', '#ef4444', '#f97316'] }] }});
+                new Chart(document.getElementById('syllChart'), { type: 'bar', data: { labels: data.students.map(s=>s.name), datasets: [{ label: 'Progress %', data: data.students.map(s=>s.progress), backgroundColor: '#6366f1' }] }});
+            } else {
+                content.innerHTML = `<div class="card text-center"><p>Analysis loading...</p></div>`;
+            }
+        };
+        window.closeAnalysisView = () => document.getElementById('analysis-overlay').classList.add('hidden');
+
+        function calculateOverallAttendanceData() {
+            const currentMonth = new Date().toISOString().substring(0, 7);
+            const monthAtt = data.attendance.filter(a => a.date.startsWith(currentMonth));
+            return {
+                present: monthAtt.filter(a => a.status === 'P').length,
+                absent: monthAtt.filter(a => a.status === 'A').length,
+                holiday: monthAtt.filter(a => a.status === 'H').length
+            };
+        }
+
+        // --- Syllabus Hub ---
+        window.showSyllabusManager = (id) => {
+            const s = data.students.find(x=>x.id===id);
+            const sy = data.syllabus.filter(x=>x.studentId===id);
+            const grouped = sy.reduce((acc, i) => { const sub = i.subject || 'General'; if(!acc[sub]) acc[sub]=[]; acc[sub].push(i); return acc; }, {});
+            
+            window.showModal(`<h3>Curriculum: ${s.name}</h3><div class="grid mt-4" style="grid-template-columns: 1fr 1fr; gap:20px; grid-template-rows: auto;">
+                <div class="modal-grid-stack">
+                    <h4>Manage Content</h4>
+                    <div class="form-group"><input type="text" id="sy-sub" placeholder="Subject"></div>
+                    <div class="form-group flex gap-2"><input type="text" id="sy-ch" placeholder="Chapter"><button class="btn btn-primary" onclick="window.addSubjectChapter('${id}')">+</button></div>
+                    <div style="max-height:200px; overflow:auto">${Object.entries(grouped).map(([sub, chs]) => `<div class="mb-2"><strong>
+                        ${sub} <button class="btn-icon" onclick="window.renameSubject('${id}', '${sub}')">✏️</button>
+                    </strong>${chs.map(c => `<div class="chapter-item">
+                        <div class="chapter-row">
+                            <span><input type="checkbox" onchange="window.toggleChapter('${id}','${c.id}',this.checked)" ${c.done?'checked':''}> ${c.title}</span>
+                            <div class="flex gap-1">
+                                <button class="btn-icon" onclick="window.editSyllabusItem('${id}', '${c.id}')">✏️</button>
+                                <button class="btn-icon delete" onclick="window.deleteDocById('syllabus', '${c.id}')">🗑️</button>
+                            </div>
+                        </div>
+                        <div class="chapter-note"><input type="text" placeholder="Note" value="${c.note||''}" onblur="window.updateChapterNote('${c.id}',this.value)"></div>
+                    </div>`).join('')}</div>`).join('')}</div>
+                </div>
+                <div class="modal-grid-stack">
+                    <h4>Record Test</h4>
+                    <div class="form-group"><select id="test-sub" onchange="window.updateTestChapters('${id}',this.value)"><option value="">Subject</option>${Object.keys(grouped).map(k=>`<option>${k}</option>`).join('')}</select></div>
+                    <div class="form-group"><select id="test-ch"><option>Chapter</option></select></div>
+                    <div class="flex gap-2"><input type="number" id="t-obt" placeholder="Obt"><input type="number" id="t-tot" placeholder="Total"></div>
+                    <button class="btn btn-primary mt-2" onclick="window.saveSubjectTest('${id}')">Save Score</button>
+                    <div class="mt-4 border-t pt-2">
+                        <h5>Test History</h5>
+                        <div style="max-height:150px; overflow:auto">
+                             ${data.tests.filter(t => t.studentId === id).map(t => `<div class="flex justify-between text-xs py-1 border-b"><span>${t.subject} (${t.marks}/${t.total})</span> <button class="btn-icon delete" onclick="window.deleteDocById('tests', '${t.id}')">🗑️</button></div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>`); 
+        };
+
+        window.addSubjectChapter = async (stId) => {
+             const subject = document.getElementById('sy-sub').value || 'General';
+             const title = document.getElementById('sy-ch').value;
+             if(title) await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'syllabus'), { studentId: stId, subject, title, done: false, note: '' });
+             window.showSyllabusManager(stId);
+        };
+        window.updateChapterNote = async (id, note) => { await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'syllabus', id), { note }); };
+        
+        // Edit Syllabus Item
+        window.editSyllabusItem = async (stId, id) => {
+            const item = data.syllabus.find(x => x.id === id);
+            const newTitle = prompt("Edit Chapter Name:", item.title);
+            if (newTitle) {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'syllabus', id), { title: newTitle });
+                window.showSyllabusManager(stId);
+            }
+        };
+        // Rename Subject Group
+        window.renameSubject = async (stId, oldSub) => {
+             const newSub = prompt("Rename Subject:", oldSub);
+             if (newSub && newSub !== oldSub) {
+                 const items = data.syllabus.filter(s => s.studentId === stId && s.subject === oldSub);
+                 for (const item of items) {
+                     await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'syllabus', item.id), { subject: newSub });
+                 }
+                 window.showSyllabusManager(stId);
+             }
+        };
+
+        window.updateTestChapters = (stId, sub) => {
+            const chs = data.syllabus.filter(s => s.studentId === stId && s.subject === sub);
+            document.getElementById('test-ch').innerHTML = `<option value="">Chapter</option>` + chs.map(c => `<option value="${c.title}">${c.title}</option>`).join('');
+        };
+        window.saveSubjectTest = async (stId) => {
+            const sub = document.getElementById('test-sub').value;
+            const ch = document.getElementById('test-ch').value;
+            const marks = document.getElementById('t-obt').value;
+            const total = document.getElementById('t-tot').value;
+            if(sub && marks) {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tests'), { studentId: stId, subject: sub, chapters: [ch], marks: Number(marks), total: Number(total), date: new Date().toISOString().split('T')[0] });
+                window.showSyllabusManager(stId);
+            }
+        };
+
+        window.toggleChapter = async (stId, id, done) => {
+            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'syllabus', id), { done });
+            const sy = data.syllabus.filter(s => s.studentId === stId);
+            const prog = Math.round((sy.filter(x=>x.done).length / (sy.length || 1)) * 100);
+            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'students', stId), { progress: prog });
+        };
+        
+        window.showAddSubTask = (id) => { const title = prompt("Milestone:"); if(title) { const g = data.goals.find(x=>x.id===id); const ts = [...(g.tasks||[]), {title, done:false}]; updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'goals', id), {tasks:ts, progress: Math.round((ts.filter(x=>x.done).length/(ts.length||1))*100)}); } };
+        window.toggleGoalTask = async (id, idx, done) => { const g = data.goals.find(x=>x.id===id); const ts = [...g.tasks]; ts[idx].done = done; updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'goals', id), {tasks:ts, progress: Math.round((ts.filter(x=>x.done).length/(ts.length||1))*100)}); };
+
+        window.generateProfessionalReport = (id) => { 
+            const s = data.students.find(x=>x.id===id); 
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("NURANI TUITION CLASSES", 105, 20, { align: "center" });
+            doc.text(`Report: ${s.name}`, 15, 40);
+            doc.save(`${s.name}_Report.pdf`);
+        };
+
+        // --- Data Sync & Auth ---
+        function initDataSync() {
+            if (!currentUser) return;
+            const userId = currentUser.uid;
+            const cols = ['reminders', 'cheques', 'tasks', 'students', 'attendance', 'syllabus', 'tests', 'goals'];
+            cols.forEach(col => {
+                onSnapshot(query(collection(db, 'artifacts', appId, 'users', userId, col)), (snap) => {
+                    data[col] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    window.renderActivePage();
+                });
+            });
+        }
+        
+        window.handleLogin = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            try { await signInWithEmailAndPassword(auth, email, pass); } catch (e) { alert(e.message); }
+        };
+        window.handleLogout = () => signOut(auth);
+        
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-view').classList.add('hidden');
+                document.getElementById('app-view').classList.remove('hidden');
+                document.getElementById('user-display-name').innerText = "Hello, " + (user.displayName || user.email);
+                initDataSync();
+            } else {
+                currentUser = null;
+                document.getElementById('auth-view').classList.remove('hidden');
+                document.getElementById('app-view').classList.add('hidden');
+            }
+        });
+
+    </script>
+</body>
+</html>
